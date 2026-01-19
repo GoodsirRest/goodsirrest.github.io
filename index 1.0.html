@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Goodsir Rest — Daily Dashboard</title>
+  <style>
+    :root{--bg:#0f1720;--card:rgba(17,24,39,0.75);--muted:#a5adb6;--accent:#7dd3fc}
+    html,body{height:100%;margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;color:#e6eef6;background-image:url("https://images.pexels.com/photos/1878811/pexels-photo-1878811.jpeg");background-color:#0f1720;background-repeat:no-repeat;background-attachment:fixed;background-position:center;background-size:cover}
+    body{display:flex;align-items:center;justify-content:center;padding:28px}
+    .wrap{width:100%;max-width:1100px}
+    .grid{display:grid;grid-template-columns:2fr 1fr;gap:18px}
+    .card{background:var(--card);padding:20px;border-radius:12px;border:1px solid rgba(255,255,255,0.06);box-shadow:0 6px 20px rgba(2,6,23,0.6)}
+    header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+    h1{margin:0;font-size:20px}
+    .meta{color:var(--muted);font-size:13px}
+    #clock{font-weight:600;font-size:18px}            
+    .section{margin-bottom:12px}
+    .links a{display:inline-block;margin-right:10px;color:var(--accent)}
+    /* To-do */
+    .todo-input{display:flex;gap:8px}
+    .todo-input input{flex:1;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:inherit}
+    .todo-list{list-style:none;padding:0;margin:10px 0 0}
+    .todo-item{display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.03);background:rgba(255,255,255,0.02)}
+    .todo-item.completed{opacity:0.6;text-decoration:line-through}
+    button{background:transparent;border:1px solid rgba(255,255,255,0.06);color:inherit;padding:6px 10px;border-radius:8px;cursor:pointer}
+    textarea{width:100%;min-height:120px;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:inherit}
+    .small{font-size:13px;color:var(--muted)}
+    /* Pomodoro */
+    .pomodoro{display:flex;align-items:center;gap:8px}
+    .time-display{font-size:24px;font-weight:700}
+    @media (max-width:880px){.grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="grid">
+      <main class="card">
+        <header>
+          <div>
+            <h1>Goodsir Rest</h1>
+          </div>
+          <div style="text-align:right">
+            <div id="clock">--:--:--</div>
+            <div class="meta" id="date">Loading date</div>
+          </div>
+        </header>
+
+        <section class="section">
+          <div class="small">Quick Links</div>
+          <div class="links" id="quickLinks">
+            <a href="https://github.com/GoodsirRest" target="_blank" rel="noopener">GitHub</a>
+
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="small">Notes (autosaved)</div>
+          <textarea id="notes" placeholder="Write quick notes for today..."></textarea>
+        </section>
+
+        <section class="section">
+          <div class="small">Pomodoro</div>
+          <div class="pomodoro">
+            <div class="time-display" id="pomTime">25:00</div>
+            <button id="pomStart">Start</button>
+            <button id="pomPause">Pause</button>
+            <button id="pomReset">Reset</button>
+          </div>
+          <div class="small" style="margin-top:8px">Work 25 / Break 5</div>
+        </section>
+
+        <section class="section">
+          <div class="small">Timer</div>
+          <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
+            <input id="timerMin" type="number" min="0" placeholder="Min" style="width:70px;padding:6px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:inherit" />
+            <input id="timerSec" type="number" min="0" max="59" placeholder="Sec" style="width:70px;padding:6px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:inherit" />
+            <div class="time-display" id="timerDisplay">00:00</div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button id="timerStart">Start</button>
+            <button id="timerPause">Pause</button>
+            <button id="timerReset">Reset</button>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="small">Stopwatch</div>
+          <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
+            <div class="time-display" id="swDisplay">00:00.00</div>
+            <button id="swStart">Start</button>
+            <button id="swLap">Lap</button>
+            <button id="swStop">Stop</button>
+            <button id="swReset">Reset</button>
+          </div>
+          <ul id="swLaps" style="margin:0;padding-left:18px;color:var(--muted)"></ul>
+        </section>
+      </main>
+
+      <aside class="card">
+        <div class="section">
+          <div class="small">To-Do</div>
+          <div class="todo-input">
+            <input id="todoInput" placeholder="Add a task and press Enter" />
+            <button id="addTodo">Add</button>
+          </div>
+          <ul class="todo-list" id="todoList"></ul>
+        </div>
+
+        <div class="section">
+          <div class="small">Today’s summary</div>
+          <p class="meta">Use the notes and todo to keep your day organised. Items persist in this browser.</p>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <script>
+    // Clock & date
+    function updateClock(){
+      const now = new Date();
+      const time = now.toLocaleTimeString();
+      const date = now.toLocaleDateString(undefined, {weekday:'short', year:'numeric', month:'short', day:'numeric'});
+      document.getElementById('clock').textContent = time;
+      document.getElementById('date').textContent = date;
+    }
+    setInterval(updateClock,1000); updateClock();
+
+    // Notes persistence
+    const notesEl = document.getElementById('notes');
+    const NOTES_KEY = 'goodsir_notes_v1';
+    notesEl.value = localStorage.getItem(NOTES_KEY) || '';
+    let notesTimer;
+    notesEl.addEventListener('input', ()=>{
+      clearTimeout(notesTimer);
+      notesTimer = setTimeout(()=> localStorage.setItem(NOTES_KEY, notesEl.value), 500);
+    });
+
+    // To-do list
+    const TODO_KEY = 'goodsir_todos_v1';
+    const todoListEl = document.getElementById('todoList');
+    const todoInput = document.getElementById('todoInput');
+    const addBtn = document.getElementById('addTodo');
+
+    function loadTodos(){
+      const raw = localStorage.getItem(TODO_KEY); return raw ? JSON.parse(raw) : [];
+    }
+    function saveTodos(items){ localStorage.setItem(TODO_KEY, JSON.stringify(items)); }
+    function renderTodos(){
+      const items = loadTodos(); todoListEl.innerHTML = '';
+      items.forEach((t,i)=>{
+        const li = document.createElement('li'); li.className = 'todo-item' + (t.done? ' completed':'');
+        const chk = document.createElement('input'); chk.type='checkbox'; chk.checked = !!t.done;
+        chk.addEventListener('change', ()=>{ items[i].done = chk.checked; saveTodos(items); renderTodos(); });
+        const span = document.createElement('span'); span.textContent = t.text; span.style.flex='1';
+        const del = document.createElement('button'); del.textContent='Del'; del.addEventListener('click', ()=>{ items.splice(i,1); saveTodos(items); renderTodos(); });
+        li.appendChild(chk); li.appendChild(span); li.appendChild(del); todoListEl.appendChild(li);
+      });
+    }
+    addBtn.addEventListener('click', addTodo);
+    todoInput.addEventListener('keydown', (e)=>{ if(e.key === 'Enter') addTodo(); });
+    function addTodo(){ const v=todoInput.value.trim(); if(!v) return; const items=loadTodos(); items.unshift({text:v,done:false}); saveTodos(items); todoInput.value=''; renderTodos(); }
+    renderTodos();
+
+    // Simple Pomodoro
+    let pomMinutes = 25, breakMinutes = 5; // configurable
+    let pomSeconds = pomMinutes*60; let pomInterval=null; let isRunning=false; let onBreak=false;
+    const pomTimeEl = document.getElementById('pomTime');
+    const startBtn = document.getElementById('pomStart');
+    const pauseBtn = document.getElementById('pomPause');
+    const resetBtn = document.getElementById('pomReset');
+
+    function formatTime(s){ const m = Math.floor(s/60).toString().padStart(2,'0'); const ss = (s%60).toString().padStart(2,'0'); return `${m}:${ss}` }
+    function updatePom(){ pomTimeEl.textContent = formatTime(pomSeconds); }
+    function tick(){ if(pomSeconds>0){ pomSeconds--; updatePom(); } else { if(!onBreak){ onBreak=true; pomSeconds = breakMinutes*60; alert('Work complete — break time!'); } else { onBreak=false; pomSeconds = pomMinutes*60; alert('Break over — back to work!'); } updatePom(); }}
+    startBtn.addEventListener('click', ()=>{ if(isRunning) return; pomInterval = setInterval(tick,1000); isRunning=true; });
+    pauseBtn.addEventListener('click', ()=>{ if(pomInterval) clearInterval(pomInterval); pomInterval=null; isRunning=false; });
+    resetBtn.addEventListener('click', ()=>{ if(pomInterval) clearInterval(pomInterval); onBreak=false; pomSeconds = pomMinutes*60; pomInterval=null; isRunning=false; updatePom(); });
+    updatePom();
+
+    // Countdown Timer
+    const timerMin = document.getElementById('timerMin');
+    const timerSec = document.getElementById('timerSec');
+    const timerDisplay = document.getElementById('timerDisplay');
+    const timerStart = document.getElementById('timerStart');
+    const timerPause = document.getElementById('timerPause');
+    const timerReset = document.getElementById('timerReset');
+    let timerTotal = 0; let timerInterval = null; let timerRunning = false;
+    function fmtTimeS(s){ const m = Math.floor(s/60).toString().padStart(2,'0'); const ss = (s%60).toString().padStart(2,'0'); return `${m}:${ss}` }
+    function timerTick(){ if(timerTotal>0){ timerTotal--; timerDisplay.textContent = fmtTimeS(timerTotal); } else { clearInterval(timerInterval); timerInterval=null; timerRunning=false; alert('Timer finished'); }}
+    timerStart.addEventListener('click', ()=>{
+      if(timerRunning) return;
+      const m = parseInt(timerMin.value || '0',10); const s = parseInt(timerSec.value || '0',10);
+      timerTotal = m*60 + s;
+      if(timerTotal<=0) return alert('Set minutes or seconds');
+      timerDisplay.textContent = fmtTimeS(timerTotal);
+      timerInterval = setInterval(timerTick,1000); timerRunning=true;
+    });
+    timerPause.addEventListener('click', ()=>{ if(timerInterval) clearInterval(timerInterval); timerInterval=null; timerRunning=false; });
+    timerReset.addEventListener('click', ()=>{ if(timerInterval) clearInterval(timerInterval); timerInterval=null; timerRunning=false; timerTotal=0; timerDisplay.textContent='00:00'; timerMin.value=''; timerSec.value=''; });
+
+    // Stopwatch
+    const swDisplay = document.getElementById('swDisplay');
+    const swStart = document.getElementById('swStart');
+    const swLap = document.getElementById('swLap');
+    const swStop = document.getElementById('swStop');
+    const swReset = document.getElementById('swReset');
+    const swLaps = document.getElementById('swLaps');
+    let swInterval = null; let swStartTime = 0; let swElapsed = 0; let swRunning = false;
+    function fmtStopwatch(ms){ const totalSec = Math.floor(ms/1000); const mm = Math.floor(totalSec/60).toString().padStart(2,'0'); const ss = (totalSec%60).toString().padStart(2,'0'); const cs = Math.floor((ms%1000)/10).toString().padStart(2,'0'); return `${mm}:${ss}.${cs}` }
+    function swTick(){ const now = Date.now(); swElapsed = now - swStartTime; swDisplay.textContent = fmtStopwatch(swElapsed); }
+    swStart.addEventListener('click', ()=>{
+      if(swRunning) return;
+      swStartTime = Date.now() - swElapsed;
+      swInterval = setInterval(swTick, 50);
+      swRunning = true;
+    });
+    swStop.addEventListener('click', ()=>{
+      if(swInterval) clearInterval(swInterval); swInterval=null; swRunning=false;
+    });
+    swReset.addEventListener('click', ()=>{
+      if(swInterval) clearInterval(swInterval); swInterval=null; swRunning=false; swElapsed=0; swDisplay.textContent='00:00.00'; swLaps.innerHTML='';
+    });
+    swLap.addEventListener('click', ()=>{
+      if(!swRunning) return; const li = document.createElement('li'); li.textContent = fmtStopwatch(swElapsed); swLaps.insertBefore(li, swLaps.firstChild);
+    });
+  </script>
+</body>
+</html>
